@@ -4,7 +4,7 @@ usage_exit() {
   cat <<EOF 1>&2
 usage: $0 <range>
 
-List PR merge commits in <range>.
+List pull request merge commits in <range>.
 
 e.g.
   $ $0 development..master
