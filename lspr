@@ -1,0 +1,42 @@
+#!/bin/bash
+
+usage_exit() {
+  cat <<EOF 1>&2
+usage: $0 <range>
+
+List PR merge commits in <range>.
+
+e.g.
+  $ $0 development..master
+
+EOF
+  exit 1
+}
+
+[ $# -gt 0 ] || usage_exit
+
+range=$1
+pr_number=""
+branch=""
+title=""
+
+git log --first-parent --pretty='format:%H%x09%s' "$range" |
+  grep -Ee '#[0-9]+' |
+  while IFS=$'\t' read -r commit subject; do
+    if echo "$subject" | grep -qEe '^Merge pull request'; then
+      # Merge pull request #9999 from BRANCH
+
+      pr_number=$(echo "$subject" | sed -Ee 's/.*(#[0-9]+).*/\1/')
+      branch=$(echo "$subject" | sed -Ee 's/.*from (.*)/\1/' | head -n1)
+      title=$(git show --pretty='%b' "$commit" | head -n1)
+    elif echo "$subject" | grep -qEe '\(#[0-9]+\)$'; then
+      # Pull Request Subject (#9999)
+
+      pr_number=$(echo "$subject" | sed -Ee 's/.*\((#[0-9]+)\)/\1/')
+      title=$(echo "$subject" | sed -Ee 's/(.*) \(#[0-9]+\)/\1/')
+    else
+      continue
+    fi
+
+    echo "$commit"$'\t'"$pr_number"$'\t'"$title"$'\t'"$branch"
+  done
